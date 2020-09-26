@@ -1,5 +1,5 @@
 #!/bin/bash
-# 26.09.2020 16:28
+# 25.09.2020 22:46
 server="localhost:80"
 unset dep deps dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result
 isroot() { if [ "$(id -u)" != 0 ]; then echo "error: you must be root"; exit 1; fi; }
@@ -253,7 +253,7 @@ check_package_() {
 get_package_() {
 	isroot
 	temp_get_dir="$(mktemp -d)"
-	for get_dep in $(cat $db_sync/database | grep -E -o "^${pkg_get} : .*" | cut -d " " -f 4- | cut -d "@" -f 1); do
+	for get_dep in $(cat $db_sync/database | grep -E -o "^${pkg_get} : .*" | cut -d " " -f 4- | sed "s/ @ .*//"); do
 		if [ $get_dep == nothing ]; then break; fi
 		if [ ! -d $db_installed/${get_dep}:* ]; then pkg_get=$get_dep get_package_; fi
 	done
@@ -295,7 +295,7 @@ do_upgrade_() {
 search_() {
 	if [ ! -f $db_sync/database ]; then echo "error: database file not found"; exit 14; fi
 	while read -r search_result; do
-	echo "$(echo $search_result | cut -d " " -f 1) $(echo $search_result | cut -d " " -f 3)%  $(echo $search_result | cut -d "@" -f 2-)"
+	echo "$(echo $search_result | cut -d " " -f 1) $(echo $search_result | cut -d " " -f 3)%  $(echo $search_result | sed "s/.* @ //")"
 	done < $db_sync/database | grep "$@" | sed "s/%/\n/1"
 }
 case $1 in
@@ -322,6 +322,7 @@ check_updates_ check
 do_upgrade_
 ;;
 search)
+if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
 search_ ${@:2}
 ;;
 get)
