@@ -44,7 +44,7 @@ package2 : version-release nothing @ Description
 3 - Some dependencies isn't installed \
 4 - Some variables from `build` file not exists \
 5 - Some files of `$pkgname` is exists in filesystem \
-6 - -- \
+6 - Unknown compression method \
 7 - Invalid arguments \
 8 - Package not installed \
 9 - Folder for `makepkg` not exists \
