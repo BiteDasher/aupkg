@@ -32,6 +32,6 @@ second_package_name.tar
 
 /package/.DB
 ```
-package : version-release dep1 dep2 dep3 dep4
-package2 : version-release nothing
+package : version-release dep1 dep2 dep3 dep4@Description
+package2 : version-release nothing@Description
 ```
