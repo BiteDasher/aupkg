@@ -41,6 +41,9 @@ showun          - show unneeded packages (orphaned)
 autoremove      - remove orphaned packages
 _EOF
 }
+msg() {
+echo -e "\e[0;32m>>>\e[0m $*"
+}
 check_deps_() {
 while read -r dep; do
 	if [[ $dep == "nothing" ]]; then break; fi
@@ -109,7 +112,7 @@ for dir in ${this_is_dir[@]}; do
 	echo "Skipping $dir due its not empty"
 	echo "$dir" >> $db_path/cleanup; fi
 done
-rm -rf $1
+rm -r -f $1
 }
 find_unneeded_() {
 	for pkg_fullname in $(find $db_installed -maxdepth 1 | tail -n +2); do
@@ -381,7 +384,7 @@ clean)
 isroot
 if [[ ! -f $db_path/cleanup || -z "$(cat $db_path/cleanup)" ]]; then true; else
 while read -r cleanup; do
-	rm -rf $cleanup
+	rm -r -f $cleanup
 done < $db_path/cleanup; fi
 ;;
 show)
@@ -431,8 +434,8 @@ source ./build
 var_check2_
 export pkgdir="$(pwd)/${name}_package"
 export srcdir="$(pwd)/${name}_sources"
-[ -d $pkgdir ] && rm -rf $pkgdir
-[ -d $srcdir ] && rm -rf $srcdir
+[ -d $pkgdir ] && rm -r -f $pkgdir
+[ -d $srcdir ] && rm -r -f $srcdir
 mkdir $srcdir $pkgdir
 curdir="$(pwd)"
 if [ $sources ]; then
@@ -446,11 +449,24 @@ source_get_mtd="$(echo $source_get | cut -d ":" -f 1)"
 	if [ "$sha256sums" ]; then printf "\nChecking sha256sums..."
 		for ssum in ${!sha256sums[*]}; do
 			if [ "${sha256sums[$ssum]}" == SKIP ]; then
-			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)... skip"; else
+			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)... skip\n"; else
 			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)..."
-			if [ "$(sha256sum $srcdir/$(echo ${sources[$ssum]} | cut -d ":" -f 2) | cut -d " " -f 1)" != ${sha256sums[$ssum]} ]; then printf " error\n"; exit 10; else printf " ok"; fi; fi; done; fi
+			if [ "$(sha256sum $srcdir/$(echo ${sources[$ssum]} | cut -d ":" -f 2) | cut -d " " -f 1)" != ${sha256sums[$ssum]} ]; then printf " error\n"; exit 10; else printf " ok\n"; fi; fi; done; fi
 if [ "$(command -v unpack)" ]; then unpack; fi
+for src in $(echo ${sources[@]} | cut -d ":" -f 2); do
+	src_1="$(echo $src | grep -o '[^.]*$')"
+	if [ -d $src ]; then continue; fi
+	case ${src_1} in
+		tar|xz|gz|tgz)
+		tar -x -v -f $srcdir/${src} -C $srcdir/ ;;
+		zip)
+		unzip $srcdir/${src} -d $srcdir/ ;;
+		*)
+		echo "error: unknown compression method"; exit 6 ;;
+	esac
+done
 cd $curdir
+if [ "$(command -v build)" ]; then build; fi
 package
 mkdir $pkgdir/AU
 cat <<__EOF__ > $pkgdir/AU/main.auc
