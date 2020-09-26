@@ -1,5 +1,5 @@
 #!/bin/bash
-# 25.09.2020 22:46
+# 26.09.2020 19:02
 server="localhost:80"
 unset dep deps dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result
 isroot() { if [ "$(id -u)" != 0 ]; then echo "error: you must be root"; exit 1; fi; }
@@ -417,6 +417,7 @@ if [ ! -d $db_installed/${arg}:* ]; then
 	echo "error: package $arg not installed"; exit 8
 fi
 done
+
 for arg in ${@:2}; do
 pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
 echo " $arg: "
@@ -427,6 +428,9 @@ done
 makepkg)
 if [ $2 ]; then cd $2 || exit 9; fi
 if [ ! -f ./build ]; then echo "error: build file not exists"; exit 7; fi
+msg() {
+	echo -e "\e[0;32m>>>\e[0m $*"
+}
 source ./build
 var_check2_
 export pkgdir="$(pwd)/${name}_package"
@@ -446,8 +450,8 @@ source_get_mtd="$(echo $source_get | cut -d ":" -f 1)"
 	if [ "$sha256sums" ]; then printf "\nChecking sha256sums..."
 		for ssum in ${!sha256sums[*]}; do
 			if [ "${sha256sums[$ssum]}" == SKIP ]; then
-			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)... skip"; else
-			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)..."
+			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)... skip\n"; else
+			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)...\n"
 			if [ "$(sha256sum $srcdir/$(echo ${sources[$ssum]} | cut -d ":" -f 2) | cut -d " " -f 1)" != ${sha256sums[$ssum]} ]; then printf " error\n"; exit 10; else printf " ok"; fi; fi; done; fi
 if [ "$(command -v unpack)" ]; then unpack; fi
 cd $curdir
