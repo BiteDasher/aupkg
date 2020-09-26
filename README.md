@@ -16,6 +16,10 @@ sources=('wget:save_to_filename:http://link/to/something')
 sha256sums=('sha256sum or SKIP')
 unpack() {
 # some commands for unpacking source files
+msg "Unpacking..."
+}
+build() {
+# some commands for compiling source files
 msg "Building..."
 }
 package() {
