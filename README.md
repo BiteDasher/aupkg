@@ -53,4 +53,4 @@ package2 : version-release nothing @ Description
 14 - Database file not found \
 15 - Failed to fetch database file \
 16 - Failed to install dependencies \
-17 - Seomthing occurs while upgrade
+17 - Something occurs while upgrade
