@@ -9,17 +9,20 @@ rel=1
 arch="x86_64"
 desc='Description.'
 license="MIT"
-deps="dep1 dep2 dep3 dep4"
+deps="dep1 dep2 dep3 dep4" # if the package has no dependencies, deps="nothing" 
 author="me"
 type=main
 sources=('wget:save_to_filename:http://link/to/something')
 sha256sums=('sha256sum or SKIP')
 unpack() {
+msg "Unpacking sources..." 
 some commands for unpacking source files
 }
 package() {
 $pkgdir is / (like install -m 755 file $pkgdir/usr/bin/$name)
 $srcdir is where ${sources[@]} save
+
+msg "Installing files..." ...
 }
 ```
 
