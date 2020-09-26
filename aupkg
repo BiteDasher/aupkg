@@ -452,7 +452,7 @@ source_get_mtd="$(echo $source_get | cut -d ":" -f 1)"
 			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)... skip\n"; else
 			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)..."
 			if [ "$(sha256sum $srcdir/$(echo ${sources[$ssum]} | cut -d ":" -f 2) | cut -d " " -f 1)" != ${sha256sums[$ssum]} ]; then printf " error\n"; exit 10; else printf " ok\n"; fi; fi; done; fi
-if [ "$(command -v unpack)" ]; then unpack; fi
+if [ "$(command -v unpack)" ]; then unpack; else
 for src in $(echo ${sources[@]} | cut -d ":" -f 2); do
 	src_1="$(echo $src | grep -o '[^.]*$')"
 	if [ -d $src ]; then continue; fi
@@ -465,6 +465,7 @@ for src in $(echo ${sources[@]} | cut -d ":" -f 2); do
 		echo "error: unknown compression method"; exit 6 ;;
 	esac
 done
+fi
 cd $curdir
 if [ "$(command -v build)" ]; then build; fi
 package
