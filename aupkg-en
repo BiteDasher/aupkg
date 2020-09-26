@@ -1,0 +1,476 @@
+#!/bin/bash
+# 25.09.2020 22:46
+server="localhost:80"
+unset dep deps dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version
+isroot() { if [ "$(id -u)" != 0 ]; then echo "error: you must be root"; exit 1; fi; }
+db_path=/var/local/au_db
+db_installed=$db_path/local
+db_sync=$db_path/sync
+[ ! -d $db_path ] && { isroot; mkdir -p $db_path; }
+[ ! -d $db_installed ] && { isroot; mkdir -p $db_installed; }
+[ ! -d $db_sync ] && { isroot; mkdir -p $db_sync; }
+locked_dirs=('/bin' '/boot' '/dev' '/etc' '/etc/profile.d' '/etc/secutiry' '/etc/skel' '/home' '/lib'
+	     '/lib64' '/mnt' '/usr' '/usr/bin' '/usr/sbin' '/usr/xbin' '/usr/lib' '/usr/lib64' '/usr/lib32'
+	     '/usr/include' '/usr/share' '/usr/src' '/opt' '/proc' '/root' '/sbin' '/xbin' '/sbin'
+	     '/usr/local' '/usr/local/bin' '/usr/local/etc' '/usr/local/games' '/usr/local/include'
+	     '/usr/local/lib' '/usr/local/man' '/usr/local/sbin' '/usr/local/xbin' '/usr/local/share'
+	     '/usr/local/share/man' '/usr/local/src' '/usr/share/man' '/var' '/var/cache' '/var/empty'
+	     '/var/games' '/var/lib' '/var/local' '/var/lock' '/var/log' '/var/mail' '/var/opt' '/var/run'
+	     '/var/tmp' '/var/spool' '/var/spool/mail')
+#
+if [ $MAKE_BASE ]; then isroot; mkdir -p ${locked_dirs[@]}; fi
+rm_tmp_pkg_dir() {
+rm -r -f $temp_pkg_dir
+}
+print_help_() {
+cat <<_EOF
+install pkg.tar - install package from archive
+get pkgname     - install package from remote repository
+show pkgname    - show information about locally installed package
+search          - search packages in remote repository
+list            - list all locally installed packages
+files           - show all files owned by package
+remove pkgname  - remove only specified package
+purge pkgname   - remove package and its dependencies
+update          - update remote database file
+check           - check all locally installed packages for updates
+upgrade         - check and upgrade all locally installed packages
+clean           - remove not empty folders after some packages uninstall
+makepkg         - make .tar with package from build file
+showun          - show unneeded packages (orphaned)
+autoremove      - remove orphaned packages
+_EOF
+}
+check_deps_() {
+while read -r dep; do
+	if [[ $dep == "nothing" ]]; then break; fi
+	if [[ $(ls $db_installed | cut -d":" -f 1 | grep -x $dep) ]]; then
+		true
+	else
+		not_found+=("$dep")
+	fi
+done < $1
+if [ $not_found ]; then
+	echo "error: following dependencies not found:"
+	echo "${not_found[@]}" | tr " " "\n"
+	rm_tmp_pkg_dir
+	exit 3
+fi
+}
+var_check_() {
+if [[ $name ]] && [[ $ver ]] && [[ $rel ]] && [[ $author ]] && [[ $arch ]] && [[ $license ]] && [[ $type ]]; then
+	true; else
+	echo "error: some variables are missing from the main file"; rm_tmp_pkg_dir; exit 4
+fi
+if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
+}
+var_check2_() {
+if [[ $name ]] && [[ $arch ]] && [[ $ver ]] && [[ $rel ]] && [[ $author ]] && [[ $license ]] && [[ $desc ]] && [[ $deps ]] && [[ $type ]]; then
+	true; else
+	echo "error: some variables are missing from the build file";  exit 4
+fi
+case $arch in
+x86_64) true ;;
+arm64) true ;;
+aarch64) true ;;
+x86) true ;;
+x64) true ;;
+*) echo "error: invalid architecture"; exit 7
+;; esac
+case $type in
+1|main) export type=1 ;;
+2|secondary) export type=2 ;;
+*) echo "error: invalid package type"; exit 7
+;; esac
+if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
+}
+is_pkg_exists_() {
+source <(tar -O -x -f $1 AU/main.auc)
+if [[ -d "$db_installed/${name}:${ver}@${rel}" ]]; then
+	if [ "$2" ]; then echo "Upgrading $name..."; return 0; else
+	echo "note: package $name already installed, upgrading"; return 1
+	fi
+fi
+}
+remove_pkg_() {
+	if [ ! -d $1 ]; then return 0; fi
+	while read -r remove; do
+	if [[ $(echo ${locked_dirs[@]} | tr " " "\n" | grep -x $remove) ]]; then true; else
+		if [ -f "$remove" ]; then
+				rm $remove; else
+			if [ -d "$remove" ]; then
+				this_is_dir+=("$remove")
+			fi
+		fi
+	fi
+done < $1/FILES
+for dir in ${this_is_dir[@]}; do
+	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; else
+	echo "Skipping $dir due its not empty"
+	echo "$dir" >> $db_path/cleanup; fi
+done
+rm -rf $1
+}
+find_unneeded_() {
+	for pkg_fullname in $(find $db_installed -maxdepth 1 | tail -n +2); do
+		if [ "$(cat $pkg_fullname/TYPE)" == 1 ]; then continue; fi
+		for dep_cycle1 in $(ls $db_installed -N -v -w 1 | grep -x -v $(echo $pkg_fullname | grep -o '[^/]*$')); do
+		if [ "$(cat $db_installed/$dep_cycle1/DEPENDENCIES | grep -x $(echo $pkg_fullname | grep -o '[^/]*$' | cut -d ":" -f 1))" ]; then
+				BREAK=1; break; else BREAK=0; continue; fi
+		done
+	if [ "$BREAK" == 0 ]; then
+	free+=("$(echo $pkg_fullname | grep -o '[^/]*$' | cut -d ":" -f 1)"); fi
+	if [ "$1" ]; then autoremove+=("$pkg_fullname"); fi
+	done
+	if [ $free ]; then
+	if [ ! "$1" ]; then echo "Here are programs that are not dependent on anyone: ${free[@]}"; fi
+	FOUND=1; fi
+	if [ "$FOUND" == 1 ]; then return 0; else return 1; fi
+}
+autoremove_() {
+	if [[ ! "$free" || ! "$autoremove" ]]; then return 12; fi
+	echo "Here are programs that are not dependent on anyone: ${free[@]}"
+	read -r -p "Remove them? [y/N] " q_autoremove
+	case $q_autoremove in
+	""|N*|n*)
+	return 1 ;;
+	*)
+	for pkg in "${autoremove}"; do
+		echo " Removing $(echo ${pkg} | grep -o '[^/]*$' | cut -d ":" -f 1)... "
+		remove_pkg_ "$pkg"
+	done
+	;; esac
+}
+find_ex_deps_() {
+	if [ "$(cat $pkg_fullname/DEPENDENCIES)" == nothing ]; then return 0; fi
+	for dep_ex in $(cat $pkg_fullname/DEPENDENCIES); do
+			if [ "$(cat $db_installed/$dep_ex:*/TYPE)" == 1 ]; then DFOUND=1; else
+		for dep_cycle2 in $(ls $db_installed -N -v -w 1 | grep -v -x -E $greparg); do
+		if [ "$(cat $db_installed/$dep_cycle2/DEPENDENCIES | grep -x $dep_ex)" ]; then
+			DFOUND=1; break; else DFOUND=0; continue; fi
+		done
+			fi
+	if [ "$DFOUND" == 1 ]; then
+		if [[ "$need" && $(echo ${need[@]} | tr " " "\n" | grep -x $dep_ex) ]]; then true; else
+	need+=("$dep_ex"); fi
+		fi
+	done
+	if [ "$1" ]; then true; else
+	if [ $need ]; then
+		echo "error: Some packages that $(echo $pkg_fullname | grep -o '[^/]*$' | cut -d ":" -f 1) depends on are needed by other programs: ${need[@]}"
+	return 1; else return 0; fi
+	fi
+}
+find_it_deps_() {
+		for dep_check2 in $(ls $db_installed -N -v -w 1 | grep -v -x -E "$greparg"); do
+			if [ "$(cat $db_installed/$dep_check2/DEPENDENCIES | grep -x $pkg_name)" ]; then
+				brokes2+=("$(echo $dep_check2 | cut -d ":" -f 1)"); else true; fi
+		done
+	if [ $brokes2 ]; then
+		for broken_deps2 in ${brokes2[@]}; do
+			echo "error: Removing $pkg_name breaks '$broken_deps2'"
+		done; exit 11; else true; fi
+}
+install_pkg_() {
+if [ "$1" ]; then
+	__exit__() {
+	return $1
+	}; else
+	__exit__() {
+	exit $1
+	}; fi
+if [ ! -f $arg ]; then echo "error: file not found"; exit 7; fi
+temp_pkg_dir="$(mktemp -d)"
+tar -x -f $arg -C $temp_pkg_dir
+a_file=$(realpath $arg)
+cd $temp_pkg_dir
+[ ! -d ./AU ] && { echo "Configuration directory not found"; rm_tmp_pkg_dir; __exit__ 2 ; }
+[ ! -f ./AU/main.auc ] && { echo "Main file not found" ; rm_tmp_pkg_dir; __exit__ 2 ; }
+[ ! -f ./AU/desc.auc ] && { echo "Description file not found" ; rm_tmp_pkg_dir; __exit__ 2 ; }
+[ ! -f ./AU/deps.auc ] && { echo "Dependencies file not found" ; rm_tmp_pkg_dir; __exit__ 2 ; }
+source ./AU/main.auc
+var_check_
+check_deps_ ./AU/deps.auc
+is_pkg_exists_ $a_file $1 || remove_pkg_ ${db_installed}/${name}:${ver}@${rel}
+		if [ ! -d "${db_installed}/${name}:${ver}@${rel}" ]; then
+while read -r check; do
+	if [[ -f "$check" ]]; then
+		conflicts+=("$check")
+	fi
+done < <(find . -not -path "./AU*" -type f | grep -E -o "/.*")
+	if [ $conflicts ]; then
+		echo "error: some files of package $name are already exists:"
+		echo "${conflicts[@]}" | tr " " "\n"
+		rm_tmp_pkg_dir
+		__exit__ 5
+	fi
+		fi
+while read -r dest; do
+	if [[ -d ./$dest && ! -d $dest ]]; then
+		mkdir -p $dest
+	fi
+	if [[ -f ".$dest" ]]; then
+		install -m $(stat -c '%a' ".$dest") ".$dest" $dest
+	fi
+done < <(find . -not -path "./AU*" | grep -E -o "/.*")
+		if [ ! -d "${db_installed}/${name}:${ver}@${rel}" ]; then
+mkdir "$db_installed/${name}:${ver}@${rel}"
+		fi
+cat <<EOF > "$db_installed/${name}:${ver}@${rel}/INFORMATION"
+PackageName=$name
+Version=$ver
+Release=$rel
+PackageAuthor=$author
+PackageArchitecture=$arch
+PackageLicense=$license
+EOF
+find . -not -path "./AU*" | grep -E -o "/.*" > "$db_installed/${name}:${ver}@${rel}/FILES"
+cat ./AU/desc.auc > "$db_installed/${name}:${ver}@${rel}/DESCRIPTION"
+cat ./AU/deps.auc > "$db_installed/${name}:${ver}@${rel}/DEPENDENCIES"
+echo "$type" > "$db_installed/${name}:${ver}@${rel}/TYPE"
+date "+%d %b %Y %H:%M" > "$db_installed/${name}:${ver}@${rel}/INSTALL_DATE"
+rm_tmp_pkg_dir
+}
+remove_deps_() {
+	if [ ! -d $pkg_fullname ]; then return 0; fi
+	if [ "$(cat $pkg_fullname/DEPENDENCIES | grep -x nothing)" ]; then return 0; fi
+	for deps in $(cat $pkg_fullname/DEPENDENCIES); do
+		if [ ! -d $pkg_fullname ]; then break; fi
+		if [ ! -d $db_installed/${deps}:* ]; then continue; fi
+		if [ "$(cat $(stat -c '%n' $db_installed/${deps}:*)/TYPE)" == 1 ]; then true; else
+			if [[ "$1" && "$need" ]]; then if [ "$(echo ${need[@]} | tr " " "\n" | grep -x $deps)" ]; then continue; fi; fi
+		remove_pkg_ $(stat -c '%n' $db_installed/${deps}:*); fi
+		done
+}
+update_db_() {
+	curl -s -o $db_sync/database $server/package/.DB || exit 15
+}
+check_package_() {
+	if [ ! -f $db_sync/database ]; then echo "error: database file not found"; exit 14; fi
+	if [ ! "$(cat $db_sync/database | grep -E -o "^${pkg_get} : .*")" ]; then echo "error: package $pkg_get not found"; exit 13; fi
+}
+	#if [ "$(curl -S $server/package/$pkg_get | grep 404)" ]; then echo "error: package $pkg_get not found"; exit 13; fi
+get_package_() {
+	isroot
+	temp_get_dir="$(mktemp -d)"
+	for get_dep in $(cat $db_sync/database | grep -E -o "^${pkg_get} : .*" | cut -d " " -f 4-); do
+		if [ $get_dep == nothing ]; then break; fi
+		if [ ! -d $db_installed/${get_dep}:* ]; then pkg_get=$get_dep get_package_; fi
+	done
+	curl -s -o $temp_get_dir/$pkg_get.tar $server/package/$pkg_get.tar
+	arg="$temp_get_dir/${pkg_get}.tar" install_pkg_ get || {
+		rm -r -f $temp_get_dir
+		exit 16
+	}
+}
+check_updates_() {
+	if [ -z "$(ls $db_installed)" ]; then echo "error: no packages installed"; exit 0; fi
+	if [ ! -f $db_sync/database ]; then echo "error: database file not found"; exit 14; fi
+		for check_update in $(ls $db_installed -N -v -w 1); do
+	name="$(echo $check_update | cut -d ":" -f 1)"
+	current_version="$(echo $check_update | cut -d ":" -f 2- | cut -d "@" -f 1)-$(echo $check_update | cut -d "@" -f 2-)"
+	new_version="$(cat $db_sync/database | grep -E -o "^${name} : .*" | cut -d " " -f 3)"
+	if [ -z "$new_version" ]; then continue; fi
+	if [ "$current_version" != "$new_version" ]; then
+	echo "$name $current_version -> $new_version"
+	if [ "$1" ]; then to_upgrade+=("$name"); fi; fi
+		done
+}
+do_upgrade_() {
+	if [ ! "$to_upgrade" ]; then return 0; fi
+	read -r -p "Upgrade? [Y/n] " q_upgrade
+	case "$q_upgrade" in
+		""|Y*|y*)
+			true ;;
+		*)
+			exit 0 ;;
+	esac
+	for pkg_get in ${to_upgrade[@]}; do
+		get_package_ $pkg_upgrade || {
+			echo "Error occured while upgrade"
+			exit 17
+		}
+	done
+}
+search_() {
+	if [ ! -f $db_sync/database ]; then echo "error: database file not found"; exit 14; fi
+	cat $db_sync/database | cut -d " " -f 1 | grep $@
+}
+case $1 in
+help)
+print_help_
+;;
+install)
+isroot
+if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
+for arg in ${@:2}; do
+install_pkg_
+done
+;;
+update)
+isroot
+update_db_
+;;
+check)
+check_updates_
+;;
+upgrade)
+isroot
+check_updates_ check
+do_upgrade_
+;;
+search)
+search_ ${@:2}
+;;
+get)
+isroot
+for pkg_get in ${@:2}; do
+check_package_
+done
+all_list="${@:2}"
+for pkg_get in ${@:2}; do
+if [ "$(echo $all_list | tr " " "\n" | grep -x "$(echo ${success[@]} | tr " " "\n" | grep -x $pkg_get)")" ]; then
+	continue
+fi
+get_package_
+success+=("$pkg_get")
+done
+;;
+remove)
+isroot
+for arg in ${@:2}; do
+if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
+if [ ! -d $db_installed/${arg}:* ]; then
+	echo "error: package $arg not installed"; exit 8
+fi
+pkg_name="$arg"
+pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
+greparg="$(echo ${@:2} | sed 's/ /:.*|/g;$s/$/:.*/')"
+find_it_deps_
+remove_pkg_ $pkg_fullname
+done
+;;
+purge)
+isroot
+if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
+for arg in ${@:2}; do
+if [ ! -d $db_installed/${arg}:* ]; then
+	echo "error: package $arg not installed"; exit 8
+fi
+done
+for arg in ${@:2}; do
+pkg_name="$arg"
+pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
+greparg="$(echo ${@:2} | sed 's/ /:.*|/g;$s/$/:.*/')"
+find_it_deps_
+find_ex_deps_ purge || exit 12
+done
+if [ "$need" ]; then echo "note: Some packages were not removed because others depend on them or they have type 1: ${need[@]}"; fi
+for arg in ${@:2}; do
+pkg_name="$arg"
+pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
+greparg="$(echo ${@:2} | sed 's/ /:.*|/g;$s/$/:.*/')"
+remove_deps_ purge
+remove_pkg_ $pkg_fullname
+done
+;;
+clean)
+isroot
+if [[ ! -f $db_path/cleanup || -z "$(cat $db_path/cleanup)" ]]; then true; else
+while read -r cleanup; do
+	rm -rf $cleanup
+done < $db_path/cleanup; fi
+;;
+show)
+if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
+for arg in ${@:2}; do
+if [ ! -d $db_installed/${arg}:* ]; then
+	echo "error: package $arg not installed"; exit 8
+fi
+pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
+source $pkg_fullname/INFORMATION
+cat <<__EOF
+Package name:      $PackageName
+Version:           $Version-$Release
+Author:            $PackageAuthor
+Architecture:      $PackageArchitecture
+License:           $PackageLicense
+Dependencies:      $(cat $pkg_fullname/DEPENDENCIES)
+Description:       $(cat $pkg_fullname/DESCRIPTION)
+Type:              $(cat $pkg_fullname/TYPE)
+Installation date: $(cat $pkg_fullname/INSTALL_DATE)
+__EOF
+done
+;;
+list)
+for pkg in $(ls $db_installed); do
+	echo $(echo $pkg | cut -d ":" -f 1) $(echo $pkg | cut -d ":" -f 2 | cut -d "@" -f 1)-$(echo $pkg | cut -d "@" -f 2)
+done
+;;
+files)
+if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
+for arg in ${@:2}; do
+if [ ! -d $db_installed/${arg}:* ]; then
+	echo "error: package $arg not installed"; exit 8
+fi
+done
+for arg in ${@:2}; do
+pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
+echo " $arg: "
+cat $pkg_fullname/FILES
+[ "$3" ] && echo ''
+done
+;;
+makepkg)
+if [ $2 ]; then cd $2 || exit 9; fi
+if [ ! -f ./build ]; then echo "error: build file not exists"; exit 7; fi
+source ./build
+var_check2_
+export pkgdir="$(pwd)/${name}_package"
+export srcdir="$(pwd)/${name}_sources"
+[ -d $pkgdir ] && rm -rf $pkgdir
+[ -d $srcdir ] && rm -rf $srcdir
+mkdir $srcdir $pkgdir
+curdir="$(pwd)"
+if [ $sources ]; then
+for source_get in ${sources[@]}; do
+source_get_mtd="$(echo $source_get | cut -d ":" -f 1)"
+	case "${source_get_mtd}" in
+		wget) wget -O $srcdir/$(echo $source_get | cut -d ":" -f 2) $(echo $source_get | cut -d ":" -f 3-) -q --show-progress;;
+		curl) cd $srcdir && curl -L -o $(echo $source_get | cut -d ":" -f 2) --progress-bar $(echo $source_get | cut -d ":" -f 3-);;
+		git) echo; cd $srcdir && git clone $(echo $source_get | cut -d ":" -f 3-) $(echo $source_get | cut -d ":" -f 2) 1>/dev/null;;
+		esac; done; fi
+	if [ "$sha256sums" ]; then printf "\nChecking sha256sums..."
+		for ssum in ${!sha256sums[*]}; do
+			if [ "${sha256sums[$ssum]}" == SKIP ]; then
+			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)... skip"; else
+			printf "\nchecking $(echo ${sources[$ssum]} | cut -d ":" -f 2)..."
+			if [ "$(sha256sum $srcdir/$(echo ${sources[$ssum]} | cut -d ":" -f 2) | cut -d " " -f 1)" != ${sha256sums[$ssum]} ]; then printf " error\n"; exit 10; else printf " ok"; fi; fi; done; fi
+if [ "$(command -v unpack)" ]; then unpack; fi
+cd $curdir
+package
+mkdir $pkgdir/AU
+cat <<__EOF__ > $pkgdir/AU/main.auc
+name=$name
+ver=$ver
+rel=$rel
+author=$author
+arch=$arch
+license=$license
+type=$type
+__EOF__
+echo $desc > $pkgdir/AU/desc.auc
+echo $deps | tr " " "\n" > $pkgdir/AU/deps.auc
+cd $pkgdir
+tar -c * -f $curdir/$name.tar
+;;
+showun)
+find_unneeded_
+;;
+autoremove)
+isroot
+find_unneeded_ autoremove
+autoremove_
+;;
+*)
+echo "error: invalid arguments"; print_help_; exit 7 ;; esac
