@@ -456,11 +456,12 @@ if [ "$(command -v unpack)" ]; then unpack; else
 for src in $(echo ${sources[@]} | cut -d ":" -f 2); do
 	src_1="$(echo $src | grep -o '[^.]*$')"
 	if [ -d $src ]; then continue; fi
+	mkdir $src/${src%.*}
 	case ${src_1} in
 		tar|xz|gz|tgz)
-		tar -x -v -f $srcdir/${src} -C $srcdir/ ;;
+		tar -x -v -f $srcdir/${src} -C $srcdir/${src%.*} ;;
 		zip)
-		unzip $srcdir/${src} -d $srcdir/ ;;
+		unzip $srcdir/${src} -d $srcdir/${src%.*} ;;
 		*)
 		echo "error: unknown compression method"; exit 6 ;;
 	esac
