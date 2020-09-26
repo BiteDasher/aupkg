@@ -32,6 +32,25 @@ second_package_name.tar
 
 /package/.DB
 ```
-package : version-release dep1 dep2 dep3 dep4@Description
-package2 : version-release nothing@Description
+package : version-release dep1 dep2 dep3 dep4 @ Description
+package2 : version-release nothing @ Description
 ```
+
+## Exit codes:
+1 - The script is not executed as root \
+2 - Some files not found (installation) \
+3 - Some dependencies isn't installed \
+4 - Some variables from `build` file not exists \
+5 - Some files of `$pkgname` is exists in filesystem \
+6 - -- \
+7 - Invalid arguments \
+8 - Package not installed \
+9 - Folder for `makepkg` not exists \
+10 - checksum error \
+11 - Removing `$dep` breaks `$pkgname` \
+12 - Removing `$dep` in `$pkgname` breaks some other packages \
+13 - Package `$pkgname` not found \
+14 - Database file not found \
+15 - Failed to fetch database file \
+16 - Failed to install dependencies \
+17 - Seomthing occurs while upgrade
