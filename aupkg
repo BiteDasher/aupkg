@@ -96,7 +96,11 @@ if [ -d "$db_installed/${name}":* ]; then
 fi
 }
 remove_pkg_() {
-	if [ ! -d $1 ]; then return 0; fi
+	if [ "$(echo $1 | grep -o ".*:.*@.*")" ]; then
+	local stat_remove="$1"; else
+	local stat_remove="$(ls $db_installed -N -v -w 1 | grep -o "^${1}:.*")"
+	fi
+	if [ ! -d $stat_remove ]; then return 0; fi
 	while read -r remove; do
 	if [[ $(echo ${locked_dirs[@]} | tr " " "\n" | grep -x $remove) ]]; then true; else
 		if [ -f "$remove" ]; then
@@ -106,13 +110,13 @@ remove_pkg_() {
 			fi
 		fi
 	fi
-done < $1/FILES
+done < $stat_remove/FILES
 for dir in ${this_is_dir[@]}; do
 	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; else
 	echo "Skipping $dir due its not empty"
 	echo "$dir" >> $db_path/cleanup; fi
 done
-rm -r -f $1
+rm -r -f $stat_remove
 }
 find_unneeded_() {
 	for pkg_fullname in $(find $db_installed -maxdepth 1 | tail -n +2); do
@@ -194,7 +198,7 @@ cd $temp_pkg_dir
 source ./AU/main.auc
 var_check_
 check_deps_ ./AU/deps.auc
-is_pkg_exists_ $a_file $1 || remove_pkg_ ${db_installed}/${name}:${ver}@${rel}
+is_pkg_exists_ $a_file $1 || remove_pkg_ ${name}
 		if [ ! -d "${db_installed}/${name}":* ]; then
 while read -r check; do
 	if [[ -f "$check" ]]; then
@@ -266,6 +270,8 @@ get_package_() {
 		exit 16
 	}
 }
+#is_pkg_conflicts_() {
+#}
 check_updates_() {
 	if [ -z "$(ls $db_installed)" ]; then echo "error: no packages installed"; exit 0; fi
 	if [ ! -f $db_sync/database ]; then echo "error: database file not found"; exit 14; fi
