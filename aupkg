@@ -89,7 +89,7 @@ if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
 }
 is_pkg_exists_() {
 source <(tar -O -x -f $1 AU/main.auc)
-if [[ $(stat -c '%n' "$db_installed/${name}":*) ]]; then
+if [ -d "$db_installed/${name}":* ]; then
 	if [ "$2" ]; then echo "Upgrading $name..."; return 0; else
 	echo "note: package $name already installed, upgrading"; return 1
 	fi
@@ -195,7 +195,7 @@ source ./AU/main.auc
 var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1 || remove_pkg_ ${db_installed}/${name}:${ver}@${rel}
-		if [ ! -d "${db_installed}/${name}:${ver}@${rel}" ]; then
+		if [ ! -d "${db_installed}/${name}":* ]; then
 while read -r check; do
 	if [[ -f "$check" ]]; then
 		conflicts+=("$check")
@@ -216,7 +216,7 @@ while read -r dest; do
 		install -m $(stat -c '%a' ".$dest") ".$dest" $dest
 	fi
 done < <(find . -not -path "./AU*" | grep -E -o "/.*")
-		if [ ! -d "${db_installed}/${name}:${ver}@${rel}" ]; then
+		if [ ! -d "${db_installed}/${name}":* ]; then
 mkdir "$db_installed/${name}:${ver}@${rel}"
 		fi
 cat <<EOF > "$db_installed/${name}:${ver}@${rel}/INFORMATION"
