@@ -350,8 +350,8 @@ done
 ;;
 remove)
 isroot
-for arg in ${@:2}; do
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
+for arg in ${@:2}; do
 if [ ! -d $db_installed/${arg}:* ]; then
 	echo "error: package $arg not installed"; exit 8
 fi
