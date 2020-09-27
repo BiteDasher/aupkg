@@ -96,9 +96,9 @@ if [ -d "$db_installed/${name}":* ]; then
 fi
 }
 remove_pkg_() {
-	if [ "$(echo $1 | grep -o ".*:.*@.*")" ]; then
-	local stat_remove="$1"; else
-	local stat_remove="$(ls $db_installed -N -v -w 1 | grep -o "^${1}:.*")"
+	if [ "$2" ]; then
+	local stat_remove="$(ls $db_installed -N -v -w 1 | grep -o "^${1}:.*")"; else
+	local stat_remove="$1"
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
 	while read -r remove; do
@@ -198,7 +198,7 @@ cd $temp_pkg_dir
 source ./AU/main.auc
 var_check_
 check_deps_ ./AU/deps.auc
-is_pkg_exists_ $a_file $1 || remove_pkg_ ${name}
+is_pkg_exists_ $a_file $1 || remove_pkg_ ${name} yes
 		if [ ! -d "${db_installed}/${name}":* ]; then
 while read -r check; do
 	if [[ -f "$check" ]]; then
