@@ -89,7 +89,7 @@ if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
 }
 is_pkg_exists_() {
 source <(tar -O -x -f $1 AU/main.auc)
-if [[ -d "$db_installed/${name}:${ver}@${rel}" ]]; then
+if [[ $(stat -c '%n' "$db_installed/${name}":*) ]]; then
 	if [ "$2" ]; then echo "Upgrading $name..."; return 0; else
 	echo "note: package $name already installed, upgrading"; return 1
 	fi
