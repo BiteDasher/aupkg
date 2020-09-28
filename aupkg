@@ -91,13 +91,13 @@ is_pkg_exists_() {
 source <(tar -O -x -f $1 AU/main.auc)
 if [ -d "$db_installed/${name}":* ]; then
 	if [ "$2" ]; then echo "Upgrading $name..."; return 0; else
-	echo "note: package $name already installed, upgrading"; return 1
+	echo "note: package $name already installed, reinstalling"; return 1
 	fi
 fi
 }
 remove_pkg_() {
 	if [ "$2" ]; then
-	local stat_remove="$(ls $db_installed -N -v -w 1 | grep -o "^${1}:.*")"; else
+	local stat_remove="$db_installed/$(ls $db_installed -N -v -w 1 | grep -o "^${1}:.*")"; else
 	local stat_remove="$1"
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
