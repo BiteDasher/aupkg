@@ -403,7 +403,7 @@ while read -r cleanup; do
 	rm -r -f $cleanup
 done < $db_path/cleanup
 else
-for cleanup in "$(cat $db_path/cleanup)"; do
+while read -u 3 cleanup; do
 	if [ -z "$(ls -A "$cleanup")" ]; then
 		rm -r -f "$cleanup"
 	else
@@ -415,9 +415,9 @@ case "$q_answer" in
 	*) true ;;
 esac
 	fi
-done
-rm $db_path/cleanup
+done 3< $db_path/cleanup
 fi
+rm $db_path/cleanup
 ;;
 show)
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
