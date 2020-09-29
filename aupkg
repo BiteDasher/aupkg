@@ -403,15 +403,15 @@ while read -r cleanup; do
 	rm -r -f $cleanup
 done < $db_path/cleanup
 else
-for cleanup in "$(cat $db_path/cleanup | sed 's/\n//')"; do
-	if [ -z "$(ls -A $cleanup)" ]; then
-		rm -r -f $cleanup
+for cleanup in "$(cat $db_path/cleanup)"; do
+	if [ -z "$(ls -A "$cleanup")" ]; then
+		rm -r -f "$cleanup"
 	else
 echo ''
-ls $cleanup
-read -r -p "Remove directory $cleanup which contains the content above? [y/N] " q_answer
+ls "$cleanup"
+read -r -p "Remove directory "$cleanup" which contains the content above? [y/N] " q_answer
 case "$q_answer" in
-	Y*|y*) rm -r -f $cleanup ;;
+	Y*|y*) rm -r -f "$cleanup" ;;
 	*) true ;;
 esac
 	fi
