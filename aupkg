@@ -200,8 +200,7 @@ var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1 || remove_pkg_ ${name} yes
 		if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
-		local yes=1
-		#if [ ! -d "${db_installed}/${name}":* ]; then
+		local yes=1; else
 while read -r check; do
 	if [[ -f "$check" ]]; then
 		conflicts+=("$check")
