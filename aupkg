@@ -509,4 +509,4 @@ find_unneeded_ autoremove
 autoremove_
 ;;
 *)
-echo "error: invalid arguments"; print_help_; exit 7 ;; esac
+echo "error: unknown argument, try: aupkg help"; exit 7 ;; esac
