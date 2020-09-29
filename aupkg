@@ -103,7 +103,7 @@ remove_pkg_() {
 	if [ ! -d $stat_remove ]; then return 0; fi
 	while read -r remove; do
 	if [[ $(echo ${locked_dirs[@]} | tr " " "\n" | grep -x $remove) ]]; then true; else
-		if [ -f "$remove" ]; then
+		if [[ -f "$remove" || -L "$remove" ]]; then
 				rm $remove; else
 			if [ -d "$remove" ]; then
 				this_is_dir+=("$remove")
@@ -215,11 +215,16 @@ done < <(find . -not -path "./AU*" -type f | grep -E -o "/.*")
 	fi
 		fi
 while read -r dest; do
-	if [[ -d ./$dest && ! -d $dest ]]; then
+	if [[ -d .$dest && ! -d $dest ]]; then
 		mkdir -p $dest
-	fi
-	if [[ -f ".$dest" ]]; then
-		install -m $(stat -c '%a' ".$dest") ".$dest" $dest
+	else
+		if [[ -f ".$dest" ]]; then
+			install -m $(stat -c '%a' ".$dest") ".$dest" $dest
+		else
+			if [[ -L ".$dest" ]]; then
+				ln -s "$(stat -c %N ".$dest" | sed "s/'//g;s/.*-> //")" "$(stat -c %N ".$dest" | sed "s/'//g;s/ ->.*//" | cut -c 2-)"
+			fi
+		fi
 	fi
 done < <(find . -not -path "./AU*" | grep -E -o "/.*")
 		if [ ! "$yes" == 1 ]; then
