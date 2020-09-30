@@ -107,7 +107,7 @@ remove_pkg_() {
 	if [[ -f "$remove" || -L "$remove" ]]; then
 				rm $remove; else
 		if [ -d "$remove" ]; then
-			if [[ $(echo $remove | grep -x "$(echo ${locked_dirs[@]}|tr " " "\n")") ]]; then true; else
+			if [[ $(grep -x "$(echo "${locked_dirs[@]}"|tr " " "\n")" <<< $remove) ]]; then true; else
 				this_is_dir+=("$remove")
 			fi
 		fi
