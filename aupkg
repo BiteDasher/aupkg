@@ -9,10 +9,10 @@ db_sync=$db_path/sync
 [ ! -d $db_path ] && { isroot; mkdir -p $db_path; }
 [ ! -d $db_installed ] && { isroot; mkdir -p $db_installed; }
 [ ! -d $db_sync ] && { isroot; mkdir -p $db_sync; }
-locked_dirs=('/bin' '/boot' '/dev' '/etc' '/etc/profile.d' '/etc/secutiry' '/etc/skel' '/home' '/lib'
+locked_dirs=('/bin' '/boot' '/dev' '/etc' '/etc/profile.d' '/etc/security' '/etc/skel' '/home' '/lib'
 	     '/lib64' '/mnt' '/usr' '/usr/bin' '/usr/sbin' '/usr/xbin' '/usr/lib' '/usr/lib64' '/usr/lib32'
 	     '/usr/include' '/usr/share' '/usr/share/licenses' '/usr/share/doc' '/usr/src' '/usr/local'
-	     '/opt' '/proc' '/root' '/sbin' '/xbin' '/sbin'
+	     '/opt' '/proc' '/root' '/sbin' '/xbin' '/sbin' '/usr/share/locale'
 	     '/usr/local/bin' '/usr/local/etc' '/usr/local/games' '/usr/local/include'
 	     '/usr/local/lib' '/usr/local/man' '/usr/local/sbin' '/usr/local/xbin' '/usr/local/share'
 	     '/usr/local/share/man' '/usr/local/src' '/usr/share/man' '/var' '/var/cache' '/var/empty'
