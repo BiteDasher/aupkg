@@ -12,13 +12,13 @@ db_sync=$db_path/sync
 locked_dirs=('/bin' '/boot' '/dev' '/etc' '/etc/profile.d' '/etc/security' '/etc/skel' '/home' '/lib'
 	     '/lib64' '/mnt' '/usr' '/usr/bin' '/usr/sbin' '/usr/xbin' '/usr/lib' '/usr/lib64' '/usr/lib32'
 	     '/usr/include' '/usr/share' '/usr/share/licenses' '/usr/share/doc' '/usr/src' '/usr/local'
-	     '/opt' '/proc' '/root' '/sbin' '/xbin' '/sbin' '/usr/share/locale'
+	     '/opt' '/proc' '/root' '/sbin' '/xbin' '/sbin' '/usr/share/locale.*'
 	     '/usr/local/bin' '/usr/local/etc' '/usr/local/games' '/usr/local/include'
-	     '/usr/local/lib' '/usr/local/man' '/usr/local/sbin' '/usr/local/xbin' '/usr/local/share'
-	     '/usr/local/share/man' '/usr/local/src' '/usr/share/man' '/var' '/var/cache' '/var/empty'
+	     '/usr/local/lib' '/usr/local/man.*' '/usr/local/sbin' '/usr/local/xbin' '/usr/local/share'
+	     '/usr/local/share/man.*' '/usr/local/src' '/usr/share/man.*' '/var' '/var/cache' '/var/empty'
 	     '/var/games' '/var/lib' '/var/local' '/var/lock' '/var/log' '/var/mail' '/var/opt'
 	     '/var/tmp' '/var/spool' '/var/spool/mail' '/var/run')
-#
+# 
 if [ $MAKE_BASE ]; then isroot; mkdir -p ${locked_dirs[@]}; fi
 rm_tmp_pkg_dir() {
 rm -r -f $temp_pkg_dir
@@ -103,10 +103,10 @@ remove_pkg_() {
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
 	while read -r remove; do
-	if [[ $(echo ${locked_dirs[@]} | tr " " "\n" | grep -x $remove) ]]; then true; else
-		if [[ -f "$remove" || -L "$remove" ]]; then
+	if [[ -f "$remove" || -L "$remove" ]]; then
 				rm $remove; else
-			if [ -d "$remove" ]; then
+		if [ -d "$remove" ]; then
+			if [[ $(echo $remove | grep -x "$(echo ${locked_dirs[@]}|tr " " "\n")") ]]; then true; else
 				this_is_dir+=("$remove")
 			fi
 		fi
