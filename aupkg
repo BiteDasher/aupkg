@@ -103,7 +103,7 @@ remove_pkg_() {
 	local stat_remove="$1"
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
-	while read -r remove; do
+while read -r remove; do
 	if [[ -f "$remove" || -L "$remove" ]]; then
 				rm $remove; else
 		if [ -d "$remove" ]; then
@@ -112,7 +112,7 @@ remove_pkg_() {
 			fi
 		fi
 	fi
-done < $stat_remove/FILES
+done < <(tac $stat_remove/FILES)
 for dir in ${this_is_dir[@]}; do
 	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; else
 	echo "Skipping $dir due its not empty"
