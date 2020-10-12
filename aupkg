@@ -224,7 +224,7 @@ while read -r dest; do
 			install -m $(stat -c '%a' ".$dest") ".$dest" $dest
 		else
 			if [[ -L ".$dest" ]]; then
-				ln -s "$(stat -c %N ".$dest" | sed "s/'//g;s/.*-> //")" "$(stat -c %N ".$dest" | sed "s/'//g;s/ ->.*//" | cut -c 2-)"
+				ln -s "$(readlink ".$dest")" "$dest"
 			fi
 		fi
 	fi
