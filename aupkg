@@ -37,7 +37,6 @@ purge pkgname   - remove package and its dependencies
 update          - update remote database file
 check           - check all locally installed packages for updates
 upgrade         - check and upgrade all locally installed packages
-clean           - remove not empty folders after some packages uninstall | clean -f to disable questions
 makepkg         - make .tar with package from build file
 showun          - show unneeded packages (orphaned)
 autoremove      - remove orphaned packages
@@ -116,8 +115,7 @@ done < <(tac $stat_remove/FILES)
 for dir in ${this_is_dir[@]}; do
 	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; else
 	echo "Skipping $dir due its not empty"
-	if [[ -f $db_path/cleanup && $(cat $db_path/cleanup | grep -x $dir) ]]; then true; else
-	echo "$dir" >> $db_path/cleanup; fi; fi
+	fi
 done
 rm -r -f $stat_remove
 }
@@ -395,30 +393,6 @@ greparg="$(echo ${@:2} | sed 's/ /:.*|/g;$s/$/:.*/')"
 remove_deps_ purge
 remove_pkg_ $pkg_fullname
 done
-;;
-clean)
-isroot
-if [[ ! -f $db_path/cleanup || -z "$(cat $db_path/cleanup)" ]]; then exit 0; fi
-if [ "$2" == "-f" ]; then
-while read -r cleanup; do
-	rm -r -f $cleanup
-done < $db_path/cleanup
-else
-while read -u 3 cleanup; do
-	if [ -z "$(ls -A "$cleanup")" ]; then
-		rm -r -f "$cleanup"
-	else
-echo ''
-ls "$cleanup"
-read -r -p "Remove directory "$cleanup" which contains the content above? [y/N] " q_answer
-case "$q_answer" in
-	Y*|y*) rm -r -f "$cleanup" ;;
-	*) true ;;
-esac
-	fi
-done 3< $db_path/cleanup
-fi
-rm $db_path/cleanup
 ;;
 show)
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
