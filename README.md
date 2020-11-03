@@ -29,6 +29,22 @@ msg "Installing..."
 }
 ```
 
+## hooks file structure for `aupkg makepkg`
+```
+before_remove() {
+echo operations before removing
+}
+after_remove() {
+...
+}
+before_install() {
+...
+}
+after_install() {
+...
+}
+```
+
 ## Database structure for server
 /package
 ```
