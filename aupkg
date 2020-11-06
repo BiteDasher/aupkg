@@ -232,10 +232,10 @@ cd $temp_pkg_dir
 [ ! -f ./AU/deps.auc ] && { echo "Dependencies file not found" ; rm_tmp_pkg_dir; __exit__ 2 ; }
 source ./AU/main.auc
 BI_DONE=0
-[ -f ./AU/hook.auc ] && { tmp_location="$temp_pkg_dir/AU" HOOK_OP=bi do_hooks_ ; BI_DONE=1 ; }
 var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1 || remove_pkg_ ${name} yes
+[ -f ./AU/hook.auc ] && { tmp_location="$temp_pkg_dir/AU" HOOK_OP=bi do_hooks_ ; BI_DONE=1 ; }
 		if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
 			local yes=1
 			if [ "$BI_DONE" != 1 ]; then
