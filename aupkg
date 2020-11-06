@@ -237,6 +237,7 @@ var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1 || remove_pkg_ ${name} yes
 		if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
+			local yes=1
 			if [ "$BI_DONE" != 1 ]; then
 		pkg_location="$db_installed/$(ls $db_installed | grep -o "^${name}:.*")" HOOK_OP=bi do_hooks_
 			unset BI_DONE
@@ -267,7 +268,7 @@ while read -r dest; do
 		fi
 	fi
 done < <(find . -not -path "./AU*" | grep -E -o "/.*")
-rm -r -f "$db_installed/${name}:*"
+[ "$yes" == 1 ] && rm -r -f "$db_installed/${name}:*"
 mkdir "$db_installed/${name}:${ver}@${rel}"
 if [ -f ./AU/hook.auc ]; then install -m 755 ./AU/hook.auc "$db_installed/${name}:${ver}@${rel}/HOOKS"; fi
 cat <<EOF > "$db_installed/${name}:${ver}@${rel}/INFORMATION"
