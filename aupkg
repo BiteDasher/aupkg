@@ -43,7 +43,7 @@ autoremove      - remove orphaned packages
 _EOF
 }
 msg() {
-echo -e "\e[0;32m>>>\e[0m $*"
+echo -e "\e[0;32m>>>\e[0m $@"
 }
 check_deps_() {
 while read -r dep; do
@@ -103,7 +103,7 @@ hook_template_() {
 			unset -f before_remove after_remove before_install after_install
 			return 0
 		else
-			echo "Running $HOOK hook for "$(echo $pkg_location | grep -o '[^/]*$' | cut -d ":" -f 1)""
+			msg "Running $HOOK hook for "$(echo $pkg_location | grep -o '[^/]*$' | cut -d ":" -f 1)""
 			$HOOK
 			unset -f before_remove after_remove before_install after_install
 		fi
@@ -118,7 +118,7 @@ case $HOOK_OP in
 		if [ ! -f $tmp_location/hook.auc ]; then return 0; fi
 	source $tmp_location/hook.auc
 		if [ "$(command -v before_install)" ]; then
-			echo "Running before_install hook for $name..."
+			msg "Running before_install hook for $name..."
 			before_install
 		fi
 	unset -f before_remove after_remove before_install after_install
