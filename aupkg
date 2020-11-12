@@ -48,6 +48,9 @@ echo -e "\e[0;32m>>>\e[0m $@"
 note() {
 echo -e "\e[0;33m===>\e[0m $@"
 }
+error() {
+echo -e "\e[0;31m>>>\e[0m $@"
+}
 check_deps_() {
 while read -r dep; do
 	if [[ $dep == "nothing" ]]; then break; fi

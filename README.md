@@ -33,6 +33,7 @@ msg "Installing..."
 ```
 before_remove() {
 note "operations before removing"
+systemctl stop nginx || error "service stop job failed"
 }
 after_remove() {
 ...
