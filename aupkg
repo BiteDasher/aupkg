@@ -1,5 +1,5 @@
 #!/bin/bash
-# 25.09.2020 22:46
+# 12.11.2020 19:27
 server="localhost:80"
 unset dep deps args dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result src src_1 src_2 sources source_get source_mtd_get sha256sums ssum q_answer HOOK HOOK_OP pkg_location tmp_location BI_DONE yes
 isroot() { if [ "$(id -u)" != 0 ]; then echo "error: you must be root"; exit 1; fi; }
@@ -75,7 +75,11 @@ fi
 if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
 }
 var_check2_() {
-if [[ $name ]] && [[ $arch ]] && [[ $ver ]] && [[ $rel ]] && [[ $author ]] && [[ $license ]] && [[ $desc ]] && [[ $deps ]] && [[ $type ]]; then
+[ ! "$author" ] && export author="Unknown"
+[ ! "$license" ] && export license="unknown"
+[ ! "$deps" ] && export deps="nothing"
+[ ! "$type" ] && export type=1
+if [[ $name ]] && [[ $arch ]] && [[ $ver ]] && [[ $rel ]] && [[ $desc ]]; then
 	true; else
 	echo "error: some variables are missing from the build file";  exit 4
 fi
@@ -109,7 +113,7 @@ hook_template_() {
 			unset -f before_remove after_remove before_install after_install
 			return 0
 		else
-			msg "Running $HOOK hook for "$(echo $pkg_location | grep -o '[^/]*$' | cut -d ":" -f 1)""
+			msg "Running $HOOK hook for "$(echo $pkg_location | grep -o '[^/]*$' | cut -d ":" -f 1)"..."
 			$HOOK
 			unset -f before_remove after_remove before_install after_install
 		fi
