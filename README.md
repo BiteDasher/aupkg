@@ -32,7 +32,7 @@ msg "Installing..."
 ## hooks file structure for `aupkg makepkg`
 ```
 before_remove() {
-echo operations before removing
+note "operations before removing"
 }
 after_remove() {
 ...
