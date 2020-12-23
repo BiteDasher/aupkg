@@ -500,7 +500,7 @@ for source_get in ${sources[@]}; do
 	place="$(echo $get_ | cut -d ":" -f 2)"
 	address="$(echo $_get | cut -d ":" -f 3-)"
 	if [ "$place" == "-" ] || [ -z "$place" ]; then
-		local place="${address##*/}"
+		place="${address##*/}"
 	fi
 	case "${source_get_mtd}" in
 		wget) wget -O "$srcdir"/"$place" "$address" -q --show-progress ;;
