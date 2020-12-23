@@ -1,7 +1,7 @@
 #!/bin/bash
 # 12.11.2020 19:27
 server="localhost:80"
-unset dep deps args dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result src src_1 src_2 sources source_get source_mtd_get sha256sums ssum q_answer HOOK HOOK_OP pkg_location tmp_location BI_DONE yes
+unset dep deps args dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result src src_1 src_2 sources source_get source_mtd_get sha256sums ssum q_answer HOOK HOOK_OP pkg_location tmp_location BI_DONE yes notfiles
 isroot() { if [ "$(id -u)" != 0 ]; then echo "error: you must be root"; exit 1; fi; }
 db_path=/var/local/au_db
 db_installed=$db_path/local
