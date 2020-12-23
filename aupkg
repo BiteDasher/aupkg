@@ -268,7 +268,7 @@ done < <(find . -not -path "./AU*" -type f | grep -E -o "/.*")
 	fi
 		fi
 while read -r dest; do
-	dest_type="$(stat -c %f "$dest")"
+	dest_type="$(stat -c %f ".$dest")"
 	case "$dest_type" in
 	41ed) mkdir -p "$dest" ;;
 	81a4) install -m $(stat -c '%a' ".$dest") ".$dest" "$dest" ;;
