@@ -156,9 +156,7 @@ while read -r remove; do
 	fi
 done < <(tac $stat_remove/FILES)
 for dir in ${this_is_dir[@]}; do
-	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; else
-	echo "Skipping $dir due its not empty"
-	fi
+	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; fi
 done
 pkg_location="$stat_remove" HOOK_OP=ar do_hooks_
 rm -r -f $stat_remove
