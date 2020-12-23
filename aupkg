@@ -497,8 +497,8 @@ curdir="$(pwd)"
 if [ $sources ]; then
 for source_get in ${sources[@]}; do
 	source_get_mtd="$(echo $source_get | cut -d ":" -f 1)"
-	place="$(echo $get_ | cut -d ":" -f 2)"
-	address="$(echo $_get | cut -d ":" -f 3-)"
+	place="$(echo $source_get | cut -d ":" -f 2)"
+	address="$(echo $source_get | cut -d ":" -f 3-)"
 	if [ "$place" == "-" ] || [ -z "$place" ]; then
 		place="${address##*/}"
 	fi
@@ -517,7 +517,15 @@ fi
 			if [ "$(sha256sum $srcdir/$(echo ${sources[$ssum]} | cut -d ":" -f 2) | cut -d " " -f 1)" != ${sha256sums[$ssum]} ]; then printf " error\n"; exit 10; else printf " ok\n"; fi; fi; done; fi
 if [ "$(command -v unpack)" ]; then unpack; else
 	if [ $sources ]; then
-for src in $(echo ${sources[@]} | cut -d ":" -f 2); do
+for src in ${sources[@]}; do
+	####
+	_src="$(echo "$src" | cut -d ":" -f 2)"
+	if [[ "$_src" == "-" || -z "$_src" ]]; then
+		src="$(echo "$src" | cut -d ":" -f 3- | grep -o "[^/]*$")"
+	else
+		src="$(echo "$src" | cut -d ":" -f 2)"
+	fi
+	####
 	if [ -d $src ]; then continue; fi
 	src_1="$(echo $src | grep -o '[^.]*$')"
 	src_2="$(echo $src | sed 's/.tar^*$//;s/.tar.xz^*$//;s/.tar.gz^*$//;s/.zip^*$;s//;s/.tgz^*$//')"
