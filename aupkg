@@ -144,12 +144,16 @@ remove_pkg_() {
 	local stat_remove="$1"
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
+	notfiles="$(cat $db_installed/*/FILES | sort -u | sed '/^$/d')"
 	pkg_location="$stat_remove" HOOK_OP=br do_hooks_
 while read -r remove; do
 	if [[ -f "$remove" || -L "$remove" ]]; then
 				rm $remove; else
 		if [ -d "$remove" ]; then
-			if [[ $(grep -x "$(echo "${locked_dirs[@]}"|tr " " "\n")" <<< $remove) ]]; then true; else
+			#if [[ $(grep -x "$(echo "${locked_dirs[@]}"|tr " " "\n")" <<< $remove) ]]; then true; else
+			#	this_is_dir+=("$remove")
+			#fi
+			if [[ "$(echo "${notfiles}" | grep -x "$remove")" ]]; then true; else
 				this_is_dir+=("$remove")
 			fi
 		fi
@@ -162,7 +166,7 @@ pkg_location="$stat_remove" HOOK_OP=ar do_hooks_
 rm -r -f $stat_remove
 }
 find_unneeded_() {
-	for pkg_fullname in $(find $db_installed -maxdepth 1 | tail -n +2); do
+	for pkg_fullname in $(find $db_installed -mindepth 1 -maxdepth 1); do
 		if [ "$(cat $pkg_fullname/TYPE)" == 1 ]; then continue; fi
 		for dep_cycle1 in $(ls $db_installed -N -v -w 1 | grep -x -v $(echo $pkg_fullname | grep -o '[^/]*$')); do
 		if [ "$(cat $db_installed/$dep_cycle1/DEPENDENCIES | grep -x $(echo $pkg_fullname | grep -o '[^/]*$' | cut -d ":" -f 1))" ]; then
@@ -264,17 +268,12 @@ done < <(find . -not -path "./AU*" -type f | grep -E -o "/.*")
 	fi
 		fi
 while read -r dest; do
-	if [[ -d .$dest && ! -d $dest ]]; then
-		mkdir -p $dest
-	else
-		if [[ -f ".$dest" ]]; then
-			install -m $(stat -c '%a' ".$dest") ".$dest" $dest
-		else
-			if [[ -L ".$dest" ]]; then
-				ln -s "$(readlink ".$dest")" "$dest"
-			fi
-		fi
-	fi
+	dest_type="$(stat -c %f "$dest")"
+	case "$dest_type" in
+	41ed) mkdir -p "$dest" ;;
+	81a4) install -m $(stat -c '%a' ".$dest") ".$dest" "$dest" ;;
+	a1ff) ln -s "$(readlink ".$dest")" "$dest" ;;
+	esac
 done < <(find . -not -path "./AU*" | grep -E -o "/.*")
 [ "$yes" == 1 ] && rm -r -f "$db_installed/${name}:*"
 mkdir "$db_installed/${name}:${ver}@${rel}"
