@@ -531,7 +531,7 @@ for src in ${sources[@]}; do
 		src="$(echo "$src" | cut -d ":" -f 2)"
 	fi
 	####
-	if [ -d $src ]; then continue; fi
+	if [ -d "$srcdir/$src" ]; then continue; fi
 	src_1="$(echo $src | grep -o '[^.]*$')"
 	src_2="$(echo $src | sed 's/.tar^*$//;s/.tar.xz^*$//;s/.tar.gz^*$//;s/.zip^*$;s//;s/.tgz^*$//')"
 	mkdir $srcdir/${src_2}
