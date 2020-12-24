@@ -268,7 +268,7 @@ done < <(find . -not -path "./AU*" -type f | grep -E -o "/.*")
 	fi
 		fi
 while read -r dest; do
-	if [[ -d ".$dest" && ! -d "$dest" ]]; then
+	if [[ -d ".$dest" && ! -d "$dest" && ! -L ".$dest" ]]; then
 		mkdir -p "$dest"
 	else
 		if [[ -f ".$dest" ]]; then
