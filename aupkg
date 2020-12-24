@@ -140,7 +140,7 @@ esac
 }
 remove_pkg_() {
 	if [ "$2" ]; then
-	local stat_remove="$db_installed/$(ls $db_installed -N -v -w 1 | grep -o "^${1}:.*")"; else
+	local stat_remove="$(find $db_installed -mindepth 1 -maxdepth 1 -iname "${1}:*")"; else
 	local stat_remove="$1"
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
