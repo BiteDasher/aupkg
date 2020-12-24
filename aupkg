@@ -1,7 +1,7 @@
 #!/bin/bash
 # 12.11.2020 19:27
 server="localhost:80"
-unset dep deps args dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result src _src src_1 src_2 sources source_get source_mtd_get sha256sums ssum q_answer HOOK HOOK_OP pkg_location tmp_location BI_DONE yes notfiles
+unset dep deps args dep_ex not_found remove this_is_dir pkg pkgs pkg_name pkg_fullname dep_cycle1 dep_cycle2 free autoremove FOUND DFOUND BREAK need dep_check2 broken_deps2 brokes2 get_dep pkg_get temp_get_dir conflicts a_file success all_list name to_upgrade q_upgrade current_version new_version check_update search_result src _src src_1 src_2 sources source_get source_mtd_get sha256sums ssum q_answer ACTION ACTION_OP pkg_location tmp_location BI_DONE yes notfiles
 isroot() { if [ "$(id -u)" != 0 ]; then echo "error: you must be root"; exit 1; fi; }
 db_path=/var/local/au_db
 db_installed=$db_path/local
@@ -106,36 +106,36 @@ if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
 	fi
 fi
 }
-hook_template_() {
-	if [ ! -f "$pkg_location/HOOKS" ]; then return 0; else
-		source $pkg_location/HOOKS
-		if [ ! "$(command -v $HOOK)" ]; then
+action_template_() {
+	if [ ! -f "$pkg_location/ACTIONS" ]; then return 0; else
+		source $pkg_location/ACTIONS
+		if [ ! "$(command -v $ACTION)" ]; then
 			unset -f before_remove after_remove before_install after_install
 			return 0
 		else
-			msg "Running $HOOK hook for "$(echo $pkg_location | grep -o '[^/]*$' | cut -d ":" -f 1)"..."
-			$HOOK
+			msg "Running $ACTION action for "$(echo $pkg_location | grep -o '[^/]*$' | cut -d ":" -f 1)"..."
+			$ACTION
 			unset -f before_remove after_remove before_install after_install
 		fi
 	fi
 }
-do_hooks_() {
-	if [ ! "$HOOK_OP" ]; then return 1; fi
-case $HOOK_OP in
-	br) HOOK=before_remove hook_template_ ;; ar) HOOK=after_remove hook_template_ ;;
+do_actions_() {
+	if [ ! "$ACTION_OP" ]; then return 1; fi
+case $ACTION_OP in
+	br) ACTION=before_remove action_template_ ;; ar) ACTION=after_remove action_template_ ;;
 	bi)
 	if [ -n "$tmp_location" ]; then
-		if [ ! -f $tmp_location/hook.auc ]; then return 0; fi
-	source $tmp_location/hook.auc
+		if [ ! -f $tmp_location/acts.auc ]; then return 0; fi
+	source $tmp_location/acts.auc
 		if [ "$(command -v before_install)" ]; then
-			msg "Running before_install hook for $name..."
+			msg "Running before_install action for $name..."
 			before_install
 		fi
 	unset -f before_remove after_remove before_install after_install
 	else
-	HOOK=before_install hook_template_
+	ACTION=before_install action_template_
        	fi ;;
-	ai) HOOK=after_install hook_template_ ;;
+	ai) ACTION=after_install action_template_ ;;
 esac
 }
 remove_pkg_() {
@@ -145,7 +145,7 @@ remove_pkg_() {
 	fi
 	if [ ! -d $stat_remove ]; then return 0; fi
 	notfiles="$(cat $db_installed/*/FILES | sort -u | sed '/^$/d')"
-	pkg_location="$stat_remove" HOOK_OP=br do_hooks_
+	pkg_location="$stat_remove" ACTION_OP=br do_actions_
 while read -r remove; do
 	if [[ -f "$remove" || -L "$remove" ]]; then
 				rm $remove; else
@@ -162,7 +162,7 @@ done < <(tac $stat_remove/FILES)
 for dir in ${this_is_dir[@]}; do
 	if [ -z "$(ls -A $dir)" ]; then rm -r $dir; fi
 done
-pkg_location="$stat_remove" HOOK_OP=ar do_hooks_
+pkg_location="$stat_remove" ACTION_OP=ar do_actions_
 rm -r -f $stat_remove
 }
 find_unneeded_() {
@@ -247,11 +247,11 @@ BI_DONE=0
 var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1 || remove_pkg_ ${name} yes
-[ -f ./AU/hook.auc ] && { tmp_location="$temp_pkg_dir/AU" HOOK_OP=bi do_hooks_ ; BI_DONE=1 ; }
+[ -f ./AU/acts.auc ] && { tmp_location="$temp_pkg_dir/AU" ACTION_OP=bi do_actions_ ; BI_DONE=1 ; }
 		if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
 			local yes=1
 			if [ "$BI_DONE" != 1 ]; then
-		pkg_location="$db_installed/$(ls $db_installed | grep -o "^${name}:.*")" HOOK_OP=bi do_hooks_
+		pkg_location="$db_installed/$(ls $db_installed | grep -o "^${name}:.*")" ACTION_OP=bi do_actions_
 			unset BI_DONE
 			fi
 		else
@@ -282,7 +282,7 @@ while read -r dest; do
 done < <(find . -not -path "./AU*" | grep -E -o "/.*")
 [ "$yes" == 1 ] && rm -r -f "$db_installed/${name}:*"
 mkdir "$db_installed/${name}:${ver}@${rel}"
-if [ -f ./AU/hook.auc ]; then install -m 755 ./AU/hook.auc "$db_installed/${name}:${ver}@${rel}/HOOKS"; fi
+if [ -f ./AU/acts.auc ]; then install -m 755 ./AU/acts.auc "$db_installed/${name}:${ver}@${rel}/ACTIONS"; fi
 cat <<EOF > "$db_installed/${name}:${ver}@${rel}/INFORMATION"
 PackageName=$name
 Version=$ver
@@ -297,7 +297,7 @@ cat ./AU/deps.auc > "$db_installed/${name}:${ver}@${rel}/DEPENDENCIES"
 echo "$type" > "$db_installed/${name}:${ver}@${rel}/TYPE"
 date "+%d %b %Y %H:%M" > "$db_installed/${name}:${ver}@${rel}/INSTALL_DATE"
 rm_tmp_pkg_dir
-pkg_location="$db_installed/${name}:${ver}@${rel}" HOOK_OP=ai do_hooks_
+pkg_location="$db_installed/${name}:${ver}@${rel}" ACTION_OP=ai do_actions_
 }
 remove_deps_() {
 	if [ ! -d $pkg_fullname ]; then return 0; fi
@@ -550,7 +550,7 @@ cd $curdir
 if [ "$(command -v build)" ]; then build; fi
 package
 mkdir $pkgdir/AU
-if [ -f "$curdir/hooks" ]; then install -m 755 "$curdir/hooks" "$pkgdir/AU/hook.auc"; fi
+if [ -f "$curdir/actions" ]; then install -m 755 "$curdir/actions" "$pkgdir/AU/acts.auc"; fi
 cat <<__EOF__ > $pkgdir/AU/main.auc
 name="$name"
 ver="$ver"

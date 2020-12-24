@@ -29,7 +29,7 @@ msg "Installing..."
 }
 ```
 
-## hooks file structure for `aupkg makepkg`
+## actions file structure for `aupkg makepkg`
 ```
 before_remove() {
 note "operations before removing"
