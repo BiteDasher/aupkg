@@ -101,8 +101,8 @@ if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
 is_pkg_exists_() {
 source <(tar -O -x -f $1 AU/main.auc)
 if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
-	if [ "$2" ]; then echo "Upgrading $name..."; return 0; else
-	echo "note: package $name already installed, reinstalling"; return 1
+	if [ "$2" ]; then echo "Upgrading $name..."; else
+	echo "note: package $name already installed, reinstalling"
 	fi
 fi
 }
@@ -250,7 +250,7 @@ source ./AU/main.auc
 BI_DONE=0
 var_check_
 check_deps_ ./AU/deps.auc
-is_pkg_exists_ $a_file $1 || remove_pkg_ ${name} yes
+is_pkg_exists_ $a_file $1
 [ -f ./AU/acts.auc ] && { tmp_location="$temp_pkg_dir/AU" ACTION_OP=bi do_actions_ ; BI_DONE=1 ; }
 		if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
 			local yes=1
