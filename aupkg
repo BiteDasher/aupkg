@@ -539,7 +539,7 @@ for src in ${sources[@]}; do
 	src_1="$(echo $src | grep -o '[^.]*$')"
 	src_2="$(echo $src | sed 's/.tar^*$//;s/.tar.xz^*$//;s/.tar.gz^*$//;s/.zip^*$;s//;s/.tgz^*$//')"
 	case ${src_1} in
-		tar|xz|gz|tgz)
+		tar|xz|gz|tgz|bz|bz2)
 		mkdir $srcdir/${src_2}
 		tar -x -v -f $srcdir/${src} -C $srcdir/${src_2} ;;
 		zip)
