@@ -538,14 +538,15 @@ for src in ${sources[@]}; do
 	if [ -d "$srcdir/$src" ]; then continue; fi
 	src_1="$(echo $src | grep -o '[^.]*$')"
 	src_2="$(echo $src | sed 's/.tar^*$//;s/.tar.xz^*$//;s/.tar.gz^*$//;s/.zip^*$;s//;s/.tgz^*$//')"
-	mkdir $srcdir/${src_2}
 	case ${src_1} in
 		tar|xz|gz|tgz)
+		mkdir $srcdir/${src_2}
 		tar -x -v -f $srcdir/${src} -C $srcdir/${src_2} ;;
 		zip)
+		mkdir $srcdir/${src_2}
 		unzip $srcdir/${src} -d $srcdir/${src_2} ;;
 		*)
-		echo "error: unknown compression method"; exit 6 ;;
+		true ;;
 	esac
 done
 	fi
