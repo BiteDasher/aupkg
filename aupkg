@@ -537,7 +537,10 @@ for src in ${sources[@]}; do
 	####
 	if [ -d "$srcdir/$src" ]; then continue; fi
 	src_1="$(echo $src | grep -o '[^.]*$')"
-	src_2="$(echo $src | sed 's/.tar^*$//;s/.tar.xz^*$//;s/.tar.gz^*$//;s/.zip^*$//;s/.tgz^*$//;s/.tar.bz^*$//;s/.tar.bz2^*$//')"
+	echo "$src_1" #################
+	echo "$src" ##################
+	src_2="$(echo $src | sed 's/\.tar^*$//;s/\.tar\.xz^*$//;s/\.tar\.gz^*$//;s/\.zip^*$//;s/\.tgz^*$//;s/\.tar\.bz^*$//;s/\.tar\.bz2^*$//')"
+	echo "$src_2" ##################
 	case ${src_1} in
 		tar|xz|gz|tgz|bz|bz2)
 		mkdir $srcdir/${src_2}
