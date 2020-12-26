@@ -273,7 +273,7 @@ done < <(find . -not -path "./AU*" -type f | grep -E -o "/.*")
 		fi
 while read -r dest; do
 	if [[ -d ".$dest" && ! -d "$dest" && ! -L ".$dest" ]]; then
-		mkdir -p "$dest"
+		mkdir -m $(stat -c '%a' ".$dest") -p "$dest"
 	else
 		if [[ -f ".$dest" ]]; then
 			install -m $(stat -c '%a' ".$dest") ".$dest" "$dest"
