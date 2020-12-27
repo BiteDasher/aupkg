@@ -252,7 +252,7 @@ var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1
 [ -f ./AU/acts.auc ] && { tmp_location="$temp_pkg_dir/AU" ACTION_OP=bi do_actions_ ; BI_DONE=1 ; }
-		if [ "$(ls $db_installed -N -v -w 1 | grep -o "^${name}:.*")" ]; then
+		if [ "$(ls $db_installed -N -v -w 1 | grep -o "^${name}:.*")" ] || [ "$OVERWRITE" == 1 ]; then
 			local yes=1
 			if [ "$BI_DONE" != 1 ]; then
 		pkg_location="$db_installed/$(ls $db_installed -N -v -w 1 | grep -o "^${name}:.*")" ACTION_OP=bi do_actions_

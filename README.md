@@ -77,3 +77,6 @@ package2 : version-release nothing @ Description
 15 - Failed to fetch database file \
 16 - Failed to install dependencies \
 17 - Something occurs while upgrade
+
+## Recommendations:
+Use `OVERWRITE=1 aupkg install` for forced file overwriting
