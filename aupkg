@@ -275,7 +275,7 @@ while read -r dest; do
 	if [[ -d ".$dest" && ! -d "$dest" && ! -L ".$dest" ]]; then
 		mkdir -m $(stat -c '%a' ".$dest") -p "$dest"
 	else
-		if [[ -f ".$dest" ]]; then
+		if [[ -f ".$dest" ]] && [[ ! -L ".$dest" ]]; then
 			install -m $(stat -c '%a' ".$dest") ".$dest" "$dest"
 		else
 			if [[ -L ".$dest" ]]; then
