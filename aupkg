@@ -568,6 +568,7 @@ __EOF__
 echo $desc > $pkgdir/AU/desc.auc
 echo $deps | tr " " "\n" > $pkgdir/AU/deps.auc
 cd $pkgdir
+[ -f ./usr/share/info/dir ] && rm -f ./usr/share/info/dir
 tar -c * -f $curdir/$name.tar
 ;;
 showun)
