@@ -54,7 +54,7 @@ echo -e "\e[0;31m>>>\e[0m $@"
 check_deps_() {
 while read -r dep; do
 	if [[ $dep == "nothing" ]]; then break; fi
-	if [[ $(ls $db_installed | cut -d":" -f 1 | grep -x $dep) ]]; then
+	if [[ $(ls $db_installed -N -v -w 1 --color=never | cut -d":" -f 1 | grep -x $dep) ]]; then
 		true
 	else
 		not_found+=("$dep")
@@ -100,7 +100,7 @@ if [ $name == nothing ]; then echo "error: invalid package name"; exit 7; fi
 }
 is_pkg_exists_() {
 source <(tar -O -x -f $1 AU/main.auc)
-if [ "$(ls $db_installed | grep -o "^${name}:.*")" ]; then
+if [ "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${name}:.*")" ]; then
 	if [ "$2" ]; then echo "Upgrading $name..."; else
 	echo "note: package $name already installed, reinstalling"
 	fi
@@ -172,7 +172,7 @@ rm -r -f $stat_remove
 find_unneeded_() {
 	for pkg_fullname in $(find $db_installed -mindepth 1 -maxdepth 1); do
 		if [ "$(cat $pkg_fullname/TYPE)" == 1 ]; then continue; fi
-		for dep_cycle1 in $(ls $db_installed -N -v -w 1 | grep -x -v $(echo $pkg_fullname | grep -o '[^/]*$')); do
+		for dep_cycle1 in $(ls $db_installed -N -v -w 1 --color=never | grep -x -v $(echo $pkg_fullname | grep -o '[^/]*$')); do
 		if [ "$(cat $db_installed/$dep_cycle1/DEPENDENCIES | grep -x $(echo $pkg_fullname | grep -o '[^/]*$' | cut -d ":" -f 1))" ]; then
 				BREAK=1; break; else BREAK=0; continue; fi
 		done
@@ -203,7 +203,7 @@ find_ex_deps_() {
 	if [ "$(cat $pkg_fullname/DEPENDENCIES)" == nothing ]; then return 0; fi
 	for dep_ex in $(cat $pkg_fullname/DEPENDENCIES); do
 			if [ "$(cat $db_installed/$dep_ex:*/TYPE)" == 1 ]; then DFOUND=1; else
-		for dep_cycle2 in $(ls $db_installed -N -v -w 1 | grep -v -x -E $greparg); do
+		for dep_cycle2 in $(ls $db_installed -N -v -w 1 --color=never | grep -v -x -E $greparg); do
 		if [ "$(cat $db_installed/$dep_cycle2/DEPENDENCIES | grep -x $dep_ex)" ]; then
 			DFOUND=1; break; else DFOUND=0; continue; fi
 		done
@@ -220,7 +220,7 @@ find_ex_deps_() {
 	fi
 }
 find_it_deps_() {
-		for dep_check2 in $(ls $db_installed -N -v -w 1 | grep -v -x -E "$greparg"); do
+		for dep_check2 in $(ls $db_installed -N -v -w 1 --color=never | grep -v -x -E "$greparg"); do
 			if [ "$(cat $db_installed/$dep_check2/DEPENDENCIES | grep -x $pkg_name)" ]; then
 				brokes2+=("$(echo $dep_check2 | cut -d ":" -f 1)"); else true; fi
 		done
@@ -252,10 +252,10 @@ var_check_
 check_deps_ ./AU/deps.auc
 is_pkg_exists_ $a_file $1
 [ -f ./AU/acts.auc ] && { tmp_location="$temp_pkg_dir/AU" ACTION_OP=bi do_actions_ ; BI_DONE=1 ; }
-		if [ "$(ls $db_installed -N -v -w 1 | grep -o "^${name}:.*")" ] || [ "$OVERWRITE" == 1 ]; then
+		if [ "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${name}:.*")" ] || [ "$OVERWRITE" == 1 ]; then
 			local yes=1
 			if [ "$BI_DONE" != 1 ]; then
-		pkg_location="$db_installed/$(ls $db_installed -N -v -w 1 | grep -o "^${name}:.*")" ACTION_OP=bi do_actions_
+		pkg_location="$db_installed/$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${name}:.*")" ACTION_OP=bi do_actions_
 			unset BI_DONE
 			fi
 		else
@@ -284,7 +284,7 @@ while read -r dest; do
 		fi
 	fi
 done < <(find . -not -path "./AU*" | grep -E -o "/.*")
-[ "$yes" == 1 ] && rm -r -f "$db_installed/${name}:*"
+[ "$yes" == 1 ] && rm -r -f "$db_installed/${name}:"*
 mkdir "$db_installed/${name}:${ver}@${rel}"
 if [ -f ./AU/acts.auc ]; then install -m 755 ./AU/acts.auc "$db_installed/${name}:${ver}@${rel}/ACTIONS"; fi
 cat <<EOF > "$db_installed/${name}:${ver}@${rel}/INFORMATION"
@@ -308,7 +308,7 @@ remove_deps_() {
 	if [ "$(cat $pkg_fullname/DEPENDENCIES | grep -x nothing)" ]; then return 0; fi
 	for deps in $(cat $pkg_fullname/DEPENDENCIES); do
 		if [ ! -d $pkg_fullname ]; then break; fi
-		if [ ! "$(ls $db_installed | grep -o "^${deps}:.*")" ]; then continue; fi
+		if [ ! "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${deps}:.*")" ]; then continue; fi
 		if [ "$(cat $(stat -c '%n' $db_installed/${deps}:*)/TYPE)" == 1 ]; then true; else
 			if [[ "$1" && "$need" ]]; then if [ "$(echo ${need[@]} | tr " " "\n" | grep -x $deps)" ]; then continue; fi; fi
 		remove_pkg_ $(stat -c '%n' $db_installed/${deps}:*); fi
@@ -327,7 +327,7 @@ get_package_() {
 	temp_get_dir="$(mktemp -d)"
 	for get_dep in $(cat $db_sync/database | grep -E -o "^${pkg_get} : .*" | cut -d " " -f 4- | sed "s/ @ .*//"); do
 		if [ $get_dep == nothing ]; then break; fi
-		if [ ! "$(ls $db_installed | grep -o "^${get_dep}:.*")" ]; then
+		if [ ! "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${get_dep}:.*")" ]; then
 		pkg_get=$get_dep get_package_; fi
 	done
 	curl -s -o $temp_get_dir/$pkg_get.tar $server/package/$pkg_get.tar
@@ -341,7 +341,7 @@ get_package_() {
 check_updates_() {
 	if [ -z "$(ls $db_installed)" ]; then echo "error: no packages installed"; exit 0; fi
 	if [ ! -f $db_sync/database ]; then echo "error: database file not found"; exit 14; fi
-		for check_update in $(ls $db_installed -N -v -w 1); do
+		for check_update in $(ls $db_installed -N -v -w 1 --color=never); do
 	name="$(echo $check_update | cut -d ":" -f 1)"
 	current_version="$(echo $check_update | cut -d ":" -f 2- | cut -d "@" -f 1)-$(echo $check_update | cut -d "@" -f 2-)"
 	new_version="$(cat $db_sync/database | grep -E -o "^${name} : .*" | cut -d " " -f 3)"
@@ -418,7 +418,7 @@ remove)
 isroot
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
 for arg in ${@:2}; do
-if [ ! "$(ls $db_installed | grep -o "^${arg}:.*")" ]; then
+if [ ! "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${arg}:.*")" ]; then
 	echo "error: package $arg not installed"; exit 8
 fi
 pkg_name="$arg"
@@ -432,7 +432,7 @@ purge)
 isroot
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
 for arg in ${@:2}; do
-if [ ! "$(ls $db_installed | grep -o "^${arg}:.*")" ]; then
+if [ ! "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${arg}:.*")" ]; then
 	echo "error: package $arg not installed"; exit 8
 fi
 done
@@ -455,7 +455,7 @@ done
 show)
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
 for arg in ${@:2}; do
-if [ ! "$(ls $db_installed | grep -o "^${arg}:.*")" ]; then
+if [ ! "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${arg}:.*")" ]; then
 	echo "error: package $arg not installed"; exit 8
 fi
 pkg_fullname="$(stat -c '%n' $db_installed/${arg}:*)"
@@ -481,7 +481,7 @@ done
 files)
 if [ ! $2 ]; then echo "error: invalid arguments"; exit 7; fi
 for arg in ${@:2}; do
-if [ ! "$(ls $db_installed | grep -o "^${arg}:.*")" ]; then
+if [ ! "$(ls $db_installed -N -v -w 1 --color=never | grep -o "^${arg}:.*")" ]; then
 	echo "error: package $arg not installed"; exit 8
 fi
 done
